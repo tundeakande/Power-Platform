@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>External Form</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<style>
+.form-control {
+    height: 100%;
+}
+</style>
+
+    <div class="container mt-5">
+        <div id="alert-container"></div>
+        <h1>External Form</h1>
+        <form id="contactForm">
+            <div class="form-group">
+                <label for="fullname">Full Name</label>
+                <input type="text" class="form-control" id="fullname" name="fullname" required>
+                
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" class="form-control" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="text" class="form-control" id="phone" name="phone" required>
+            </div>
+            <div class="form-group">
+                <label for="dob">Date of Birth</label>
+                <input type="date" class="form-control" id="dob" name="dob" max="" required>     
+            </div>
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender" class="form-control" name="gender" required>
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Prefer not to say</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="message">Comment</label>
+                <textarea class="form-control" id="comments" name="comments" rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="attachments">Documents</label>
+                <input type="file" class="form-control" id="attachments" name="attachments" multiple>
+            </div>
+            <button type="submit" class="btn btn-success">Submit</button>
+        </form>
+    </div>
+
+    <script>
+ document.addEventListener('DOMContentLoaded', function() {
+            // Set max date for DOB to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('dob').setAttribute('max', today);
+        });
+
+        document.getElementById("contactForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const form = event.target;
+
+            const attachments = document.getElementById('attachments').files; 
+            //Attachments 
+            const attachmentsBase64 = [];
+            if (attachments.length > 0) {
+                for (let i = 0; i < attachments.length; i++) {
+                    const file = attachments[i];
+                    try {
+                        const base64 = await fileToBase64(file);
+                        attachmentsBase64.push({
+                            filename: file.name,
+                            content: base64
+                        });
+                    } catch (error) {
+                        document.getElementById('attachmentsError').textContent = 'Failed to process attachments.';
+                        break;
+                    }
+                }
+            }
+
+            const formData = {
+                fullname: form.fullname.value,
+                email: form.email.value,
+                phone: form.phone.value,
+                dob: form.dob.value,
+                gender: form.gender.value,
+                comments: form.comments.value,
+                documents: attachmentsBase64
+            };
+
+            try {
+                const response = await fetch("@{variables('POST URL')}}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    showAlert("Successfully submitted the form.", "success");
+                    setFormToViewMode(form);
+                } else {
+                    showAlert("Failed to submit the form.", "danger");
+                }
+            } catch (error) {
+                showAlert("Failed to submit the form.", "danger");
+            }
+        });
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById("alert-container");
+            alertContainer.innerHTML = `
+                <div class="alert alert-${type}" role="alert">
+                    ${message}
+                </div>
+            `;
+        }
+
+        function setFormToViewMode(form) {
+            Array.from(form.elements).forEach(element => {
+                if (element.tagName.toLowerCase() !== "button") {
+                    element.disabled = true;
+                }
+            });
+            form.querySelector("button[type='submit']").style.display = "none";
+        }
+
+        // Function to convert a file to Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+    </script>
+</body>
+</html>
