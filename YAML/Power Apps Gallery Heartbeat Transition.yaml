@@ -1,0 +1,12 @@
+- tim_GalleryTransition:
+    Control: Timer@2.1.0
+    Properties:
+      AutoPause: =false
+      AutoStart: =true
+      Duration: =500
+      OnTimerEnd: |-
+        =UpdateContext({varTransition: If(varTransition = Transition.Pop, Transition.Push, Transition.Pop)})
+      Repeat: =true
+      Visible: =false
+      X: =20
+      Y: =20
